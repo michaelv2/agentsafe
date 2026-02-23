@@ -18,9 +18,11 @@ config/*secret*
 workspace/
 
 # =============================================================================
-# Claude Code local settings (machine-specific)
+# Machine-specific files
 # =============================================================================
 .claude/settings.local.json
+docker-compose.yml
+SANDBOX.md
 
 # =============================================================================
 # OS and editor artifacts
