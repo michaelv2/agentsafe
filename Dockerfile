@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         openssh-server \
         gosu \
         iptables \
+        tini \
         ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -82,5 +83,5 @@ WORKDIR /workspace
 EXPOSE 22
 EXPOSE 8000-8099
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["tini", "--", "/entrypoint.sh"]
 CMD ["claude"]

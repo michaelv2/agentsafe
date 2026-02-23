@@ -92,6 +92,7 @@ A dedicated GitHub account with a **fine-grained Personal Access Token (PAT)**:
 - Bind-mounted **read-only** into the container at a staging path (`.credentials-seed.json`)
 - Entrypoint copies the seed to a **writable** `.credentials.json` so Claude CLI can refresh short-lived access tokens using the refresh token
 - Tokens are re-seeded from the host file on each container restart
+- **Tradeoff:** Any tokens refreshed inside the container are lost on restart. If the host seed's access token has expired, the CLI will use the refresh token to obtain a new one on next launch.
 - **Not** passed as an env var (avoids `docker inspect` exposure)
 
 ### 6. Environment Variables

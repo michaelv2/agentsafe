@@ -51,7 +51,7 @@ services:
 
       # Ollama host on LAN — use IP address, optional port (default 11434)
       # Example: 192.168.1.50 or 192.168.1.50:11434
-      - OLLAMA_HOST=
+      - OLLAMA_HOST=llm-server
 
       # Git identity for the machine user
       - GIT_AUTHOR_NAME=agentsafe-bot
