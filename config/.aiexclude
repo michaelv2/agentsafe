@@ -1,0 +1,13 @@
+# Prevent Claude from reading sensitive files
+.credentials.json
+.git-credentials
+git-credentials
+authorized_keys
+*.pem
+*.key
+id_ed25519
+id_rsa
+id_ecdsa
+known_hosts
+sshd_config
+.env

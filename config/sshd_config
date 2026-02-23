@@ -1,0 +1,38 @@
+# AgentSafe hardened sshd configuration
+
+Port 22
+AddressFamily any
+ListenAddress 0.0.0.0
+
+# Authentication
+PermitRootLogin no
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
+UsePAM yes
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# Only allow the claude user
+AllowUsers claude
+
+# Security
+StrictModes no
+PermitEmptyPasswords no
+X11Forwarding no
+PrintMotd no
+AcceptEnv LANG LC_*
+
+# Agent forwarding disabled to prevent exfiltration via prompt injection
+AllowAgentForwarding no
+
+# Only allow local forwarding for port-serving web apps
+AllowTcpForwarding local
+GatewayPorts no
+
+# Keepalive
+ClientAliveInterval 60
+ClientAliveCountMax 3
+
+# Logging
+LogLevel INFO
