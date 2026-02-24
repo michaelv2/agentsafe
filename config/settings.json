@@ -26,5 +26,27 @@
       "Bash(docker:*)",
       "Bash(sudo:*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /opt/cortex/dist/bin/session-start.js"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /opt/cortex/dist/bin/pre-compact.js"
+          }
+        ]
+      }
+    ]
   }
 }
