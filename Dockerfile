@@ -46,10 +46,10 @@ RUN mkdir -p /var/run/sshd
 # Fix PAM for container: pam_loginuid fails without CAP_AUDIT_WRITE
 RUN sed -i 's/session\s*required\s*pam_loginuid.so/session optional pam_loginuid.so/' /etc/pam.d/sshd
 
-# Copy Claude CLI from builder
+# Copy CLI packages from builder and create bin symlinks
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
-COPY --from=builder /usr/local/bin/claude /usr/local/bin/claude
-COPY --from=builder /usr/local/bin/codex /usr/local/bin/codex
+RUN ln -s /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js /usr/local/bin/claude \
+    && ln -s /usr/local/lib/node_modules/@openai/codex/bin/codex.js /usr/local/bin/codex
 
 # Remove the node user/group from the base image to free UID/GID (e.g. 1000)
 RUN userdel -r node 2>/dev/null || true \

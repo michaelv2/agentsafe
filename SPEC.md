@@ -2,7 +2,7 @@
 
 ## Overview
 
-A single **custom Docker container** running in WSL2 with NVIDIA GPU passthrough, accessed via SSH from external devices. The container runs Claude CLI as a non-root user with controlled network egress, volume-mounted workspace, and a GitHub machine user for code access.
+A single **custom Docker container** running in WSL2 with NVIDIA GPU passthrough, accessed via SSH from external devices. The container runs Claude CLI and OpenAI Codex CLI as a non-root user with controlled network egress, volume-mounted workspace, and a GitHub machine user for code access.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -14,6 +14,7 @@ A single **custom Docker container** running in WSL2 with NVIDIA GPU passthrough
 │  │  │                                         │  │  │
 │  │  │   claude (non-root user)                │  │  │
 │  │  │   ├── Claude CLI (OAuth)                │  │  │
+│  │  │   ├── Codex CLI (API key)               │  │  │
 │  │  │   ├── Python 3 + venv                   │  │  │
 │  │  │   ├── git (machine user, HTTPS PAT)     │  │  │
 │  │  │   └── sshd (port 2222)                  │  │  │
@@ -47,7 +48,7 @@ Multi-stage build borrowing patterns from [cabinlab/claude-code-sdk-docker](http
 - **Base:** `node:22-slim` (Debian). NVIDIA Container Toolkit handles GPU driver mounting at runtime, so no CUDA base image needed. Pre-built PyTorch wheels bundle their own CUDA runtime.
 - Non-root `claude` user baked into image
 - Tools: Python 3, pip, git, curl, openssh-server, common CLI utils
-- Claude CLI installed globally via npm
+- Claude CLI and Codex CLI installed globally via npm
 - `.claude/` scaffolding: hooks dir, `.aiexclude`, settings
 - Build deps (build-essential, etc.) stripped via multi-stage
 
@@ -97,7 +98,7 @@ A dedicated GitHub account with a **fine-grained Personal Access Token (PAT)**:
 
 ### 6. Environment Variables
 
-- Agent API keys and secrets stored in `config/.env`
+- Agent API keys and secrets stored in `config/.env` (e.g., `OPENAI_API_KEY` for Codex CLI)
 - Loaded via `env_file` in docker-compose.yml
 - Added to `.aiexclude` to prevent Claude from reading the file
 - Visible via `docker inspect` (acceptable for a local sandbox)
@@ -137,6 +138,7 @@ agentsafe/
 │   └── sshd_config         # Hardened SSH server config
 └── scripts/
     ├── claude.sh           # Shortcut: launch Claude CLI in container
+    ├── codex.sh            # Shortcut: launch Codex CLI in container
     ├── setup-host.sh       # One-time: install NVIDIA toolkit, create dirs
     ├── shell.sh            # Shortcut: bash shell in container
     └── start.sh            # Daily: launch the sandbox
