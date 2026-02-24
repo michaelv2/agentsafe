@@ -38,7 +38,22 @@ else
 fi
 
 # =============================================================================
-# 3. Configure git for the machine user (HTTPS credential helper)
+# 3. Seed Claude CLI state (disable auto-updates; can't work in container)
+# =============================================================================
+
+CLAUDE_JSON="${CLAUDE_HOME}/.claude/.claude.json"
+if [ ! -f "${CLAUDE_JSON}" ]; then
+    echo '{"autoUpdates":false}' > "${CLAUDE_JSON}"
+else
+    # Merge autoUpdates into existing file if not already set
+    if ! grep -q '"autoUpdates"' "${CLAUDE_JSON}"; then
+        tmp=$(jq '. + {"autoUpdates":false}' "${CLAUDE_JSON}") && echo "$tmp" > "${CLAUDE_JSON}"
+    fi
+fi
+chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_JSON}"
+
+# =============================================================================
+# 4. Configure git for the machine user (HTTPS credential helper)
 # =============================================================================
 
 gosu ${CLAUDE_USER} git config --global credential.helper "store --file=${CLAUDE_HOME}/.git-credentials"
@@ -46,7 +61,7 @@ gosu ${CLAUDE_USER} git config --global user.name "${GIT_AUTHOR_NAME:-agentsafe-
 gosu ${CLAUDE_USER} git config --global user.email "${GIT_AUTHOR_EMAIL:-agentsafe-bot@users.noreply.github.com}"
 
 # =============================================================================
-# 4. Network egress rules — block LAN, allow internet + Ollama
+# 5. Network egress rules — block LAN, allow internet + Ollama
 # =============================================================================
 
 apply_network_rules() {
@@ -94,7 +109,7 @@ else
 fi
 
 # =============================================================================
-# 5. Start SSH server
+# 6. Start SSH server
 # =============================================================================
 
 # Generate host keys if missing (first run)
@@ -104,7 +119,7 @@ echo "[agentsafe] Starting sshd"
 /usr/sbin/sshd
 
 # =============================================================================
-# 6. Drop to non-root user and exec CMD
+# 7. Drop to non-root user and exec CMD
 # =============================================================================
 
 echo "[agentsafe] Ready — dropping to user '${CLAUDE_USER}'"
