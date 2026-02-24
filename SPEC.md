@@ -96,14 +96,22 @@ A dedicated GitHub account with a **fine-grained Personal Access Token (PAT)**:
 - **Tradeoff:** Any tokens refreshed inside the container are lost on restart. If the host seed's access token has expired, the CLI will use the refresh token to obtain a new one on next launch.
 - **Not** passed as an env var (avoids `docker inspect` exposure)
 
-### 6. Environment Variables
+### 6. Codex CLI Authentication
+
+- Run `codex login --device-auth` inside the container (via `scripts/codex.sh` or SSH)
+- Prints a URL and code — open the URL in any browser and enter the code to authenticate
+- Credentials are stored in `~/.codex/auth.json` inside the container
+- Credentials persist until the container is recreated (`docker compose down` + `up` preserves them; `docker compose down -v` or `docker rm` does not)
+- **Alternative:** Set `OPENAI_API_KEY` in `config/.env` to skip OAuth entirely (but misses ChatGPT Plus/Pro API credits)
+
+### 7. Environment Variables
 
 - Agent API keys and secrets stored in `config/.env` (e.g., `OPENAI_API_KEY` for Codex CLI)
 - Loaded via `env_file` in docker-compose.yml
 - Added to `.aiexclude` to prevent Claude from reading the file
 - Visible via `docker inspect` (acceptable for a local sandbox)
 
-### 7. Security Hardening
+### 8. Security Hardening
 
 - `cap_drop: ALL` with only required capabilities added back:
   - `CHOWN`, `FOWNER` — fix ownership on mounted volumes
@@ -162,11 +170,12 @@ agentsafe/
 2. **Create GitHub machine user** account, generate fine-grained PAT scoped to needed repos
 3. **Build the Docker image:** `docker build -t agentsafe .`
 4. **Run `claude /login`** on host, then copy `~/.claude/.credentials.json` to `config/.credentials.json`
-5. **Save GitHub PAT** to `config/git-credentials`
-6. **Generate SSH keypair** for remote access, place public key in `config/authorized_keys`
-7. **Create workspace directory** on host
-8. **`docker compose up -d`** to launch
-9. **SSH in** from phone/laptop: `ssh -p 2222 claude@<wsl-ip>`
+5. **Codex auth:** Run `scripts/codex.sh login --device-auth` (or set `OPENAI_API_KEY` in `config/.env`)
+6. **Save GitHub PAT** to `config/git-credentials`
+7. **Generate SSH keypair** for remote access, place public key in `config/authorized_keys`
+8. **Create workspace directory** on host
+9. **`docker compose up -d`** to launch
+10. **SSH in** from phone/laptop: `ssh -p 2222 claude@<wsl-ip>`
 
 ## References
 
