@@ -70,6 +70,9 @@ services:
       # Example: 192.168.1.50 or 192.168.1.50:11434
       - OLLAMA_HOST=
 
+      # Cortex memory path (matches volume mount, optional)
+      # - CORTEX_PATH=/opt/cortex
+
       # Appearance
       - TERM=xterm-256color
 
