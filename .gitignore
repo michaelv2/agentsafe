@@ -23,7 +23,6 @@ workspace/
 .claude/settings.local.json
 docker-compose.yml
 SANDBOX.md
-CLAUDE.md
 
 # =============================================================================
 # OS and editor artifacts
