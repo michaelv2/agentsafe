@@ -32,13 +32,18 @@ check_file "${PROJECT_DIR}/config/authorized_keys"    "SSH authorized keys"
 # -------------------------------------------------------------------------
 if ! docker image inspect agentsafe:latest &>/dev/null; then
     echo "[BUILD] Image not found, building..."
-    docker build -t agentsafe:latest "${PROJECT_DIR}"
+    docker build \
+        --build-arg CLAUDE_UID="$(id -u)" \
+        --build-arg CLAUDE_GID="$(id -g)" \
+        -t agentsafe:latest "${PROJECT_DIR}"
 fi
 
 # -------------------------------------------------------------------------
 # Launch
 # -------------------------------------------------------------------------
 echo "[START] Launching agentsafe container..."
+export CLAUDE_UID="$(id -u)"
+export CLAUDE_GID="$(id -g)"
 docker compose -f "${PROJECT_DIR}/docker-compose.yml" up -d
 
 # Wait for SSH to be ready

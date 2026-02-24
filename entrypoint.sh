@@ -8,6 +8,9 @@ CLAUDE_HOME="/home/${CLAUDE_USER}"
 # 1. Fix ownership and permissions on mounted volumes
 # =============================================================================
 
+# Workspace directory (bind-mounted from host, may arrive as root-owned)
+chown ${CLAUDE_USER}:${CLAUDE_USER} /workspace
+
 # .ssh directory and authorized_keys
 chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.ssh"
 chmod 700 "${CLAUDE_HOME}/.ssh"
