@@ -104,9 +104,8 @@ EOF
         cat > "${CONFIG_DIR}/.env" <<'EOF'
 # Agent API keys and secrets
 # Format: KEY=value (no quotes, no spaces around =)
-# Example:
-# OPENAI_API_KEY=your-openai-key-here
-# TAVILY_API_KEY=your-tavily-key-here
+OPENAI_API_KEY=
+# TAVILY_API_KEY=
 EOF
         chmod 600 "${CONFIG_DIR}/.env"
         echo "[TODO] ${CONFIG_DIR}/.env created (placeholder)"

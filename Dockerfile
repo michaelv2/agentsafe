@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------
 FROM node:22-slim AS builder
 
-RUN npm install -g @anthropic-ai/claude-code \
+RUN npm install -g @anthropic-ai/claude-code @openai/codex \
     && find /usr/local/lib/node_modules/@anthropic-ai/claude-code \
         -path "*/vendor/*" \( \
             -name "win32*" -o \
@@ -49,6 +49,11 @@ RUN sed -i 's/session\s*required\s*pam_loginuid.so/session optional pam_loginuid
 # Copy Claude CLI from builder
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=builder /usr/local/bin/claude /usr/local/bin/claude
+COPY --from=builder /usr/local/bin/codex /usr/local/bin/codex
+
+# Remove the node user/group from the base image to free UID/GID (e.g. 1000)
+RUN userdel -r node 2>/dev/null || true \
+    && groupdel node 2>/dev/null || true
 
 # Create non-root user
 RUN groupadd -g ${CLAUDE_GID} ${CLAUDE_USER} \
@@ -61,10 +66,12 @@ RUN sed -i 's/^claude:!:/claude:*:/' /etc/shadow
 RUN mkdir -p /workspace \
         /home/${CLAUDE_USER}/.claude/commands \
         /home/${CLAUDE_USER}/.claude/hooks \
+        /home/${CLAUDE_USER}/.codex \
         /home/${CLAUDE_USER}/.ssh \
     && chown -R ${CLAUDE_USER}:${CLAUDE_USER} \
         /workspace \
         /home/${CLAUDE_USER}/.claude \
+        /home/${CLAUDE_USER}/.codex \
         /home/${CLAUDE_USER}/.ssh
 
 # Set up a default Python venv so the agent never needs --break-system-packages
