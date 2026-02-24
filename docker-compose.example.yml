@@ -46,8 +46,17 @@ services:
       # Hardened sshd config — read-only
       - ./config/sshd_config:/etc/ssh/sshd_config:ro
 
+      # Claude CLI settings (permissions, hooks, statusline) — read-only
+      - ./config/settings.json:/home/claude/.claude/settings.json:ro
+      - ./config/statusline.sh:/home/claude/.claude/statusline.sh:ro
+
       # .aiexclude — read-only
       - ./config/.aiexclude:/home/claude/.claude/.aiexclude:ro
+
+      # Cortex memory — runtime (read-only) and shared data (read-write)
+      # Requires claude-cortex-core to be cloned and built on the host
+      # - ~/projects/claude-cortex-core:/opt/cortex:ro
+      # - ~/.claude-cortex:/home/claude/.claude-cortex
 
     # --- Environment ---
     env_file:
@@ -60,6 +69,9 @@ services:
       # Ollama host on LAN — use IP address, optional port (default 11434)
       # Example: 192.168.1.50 or 192.168.1.50:11434
       - OLLAMA_HOST=
+
+      # Appearance
+      - TERM=xterm-256color
 
       # Git identity for the machine user
       - GIT_AUTHOR_NAME=agentsafe-bot
