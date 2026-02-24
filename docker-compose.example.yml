@@ -49,6 +49,7 @@ services:
       # Claude CLI settings (permissions, hooks, statusline) — read-only
       - ./config/settings.json:/home/claude/.claude/settings.json:ro
       - ./config/statusline.sh:/home/claude/.claude/statusline.sh:ro
+      - ./config/global-claude.md:/home/claude/.claude/CLAUDE.md:ro
 
       # .aiexclude — read-only
       - ./config/.aiexclude:/home/claude/.claude/.aiexclude:ro
