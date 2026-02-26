@@ -51,6 +51,9 @@ services:
       - ./config/statusline.sh:/home/claude/.claude/statusline.sh:ro
       - ./config/global-claude.md:/home/claude/.claude/CLAUDE.md:ro
 
+      # Codex CLI defaults (approval/sandbox/web search) — read-only
+      - ./config/codex-config.toml:/home/claude/.codex/config.toml:ro
+
       # .aiexclude — read-only
       - ./config/.aiexclude:/home/claude/.claude/.aiexclude:ro
 

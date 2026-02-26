@@ -1,0 +1,12 @@
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "live"
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/workspace"]
+trust_level = "trusted"
+
+[projects."/workspace/projects_safe"]
+trust_level = "trusted"

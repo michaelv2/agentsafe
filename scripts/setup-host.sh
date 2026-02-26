@@ -123,6 +123,29 @@ EOF
     else
         echo "[OK] authorized_keys already exists"
     fi
+
+    # Codex defaults placeholder
+    if [ ! -f "${CONFIG_DIR}/codex-config.toml" ]; then
+        cat > "${CONFIG_DIR}/codex-config.toml" <<'EOF'
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+web_search = true
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/workspace"]
+trust_level = "trusted"
+
+[projects."/workspace/projects_safe"]
+trust_level = "trusted"
+EOF
+        chmod 644 "${CONFIG_DIR}/codex-config.toml"
+        echo "[TODO] ${CONFIG_DIR}/codex-config.toml created (autonomous Codex defaults)"
+        echo "       Review approval/sandbox/search settings for your risk tolerance"
+    else
+        echo "[OK] codex-config.toml already exists"
+    fi
 }
 
 # -------------------------------------------------------------------------
@@ -155,6 +178,7 @@ echo "Next steps:"
 echo "  1. Copy Claude credentials:   cp ~/.claude/.credentials.json ${CONFIG_DIR}/.credentials.json"
 echo "  2. Add GitHub PAT to:         ${CONFIG_DIR}/git-credentials"
 echo "  3. Add SSH public key to:     ${CONFIG_DIR}/authorized_keys"
-echo "  4. Build the image:           docker build -t agentsafe ${PROJECT_DIR}"
-echo "  5. Launch:                    docker compose -f ${PROJECT_DIR}/docker-compose.yml up -d"
+echo "  4. Review Codex defaults:     ${CONFIG_DIR}/codex-config.toml"
+echo "  5. Build the image:           docker build -t agentsafe ${PROJECT_DIR}"
+echo "  6. Launch:                    docker compose -f ${PROJECT_DIR}/docker-compose.yml up -d"
 echo ""
