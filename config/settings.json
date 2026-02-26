@@ -29,6 +29,10 @@
     "type": "command",
     "command": "python3 ~/.claude/statusline.sh"
   },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "hooks": {
     "SessionStart": [
       {
