@@ -60,6 +60,10 @@ gosu ${CLAUDE_USER} git config --global credential.helper "store --file=${CLAUDE
 gosu ${CLAUDE_USER} git config --global user.name "${GIT_AUTHOR_NAME:-agentsafe-bot}"
 gosu ${CLAUDE_USER} git config --global user.email "${GIT_AUTHOR_EMAIL:-agentsafe-bot@users.noreply.github.com}"
 
+# Rewrite SSH GitHub URLs to HTTPS so the PAT credential helper is used,
+# without modifying the actual remote (which is bind-mounted from the host).
+gosu ${CLAUDE_USER} git config --global url."https://github.com/".insteadOf "git@github.com:"
+
 # =============================================================================
 # 5. Network egress rules — block LAN, allow internet + Ollama
 # =============================================================================
@@ -77,15 +81,22 @@ apply_network_rules() {
     # Allow established/related connections
     iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-    # Allow Ollama host if configured (strip port if present, e.g. "192.168.1.50:11434" → "192.168.1.50")
-    if [ -n "${OLLAMA_HOST}" ]; then
-        OLLAMA_IP="${OLLAMA_HOST%%:*}"
-        OLLAMA_PORT="${OLLAMA_HOST##*:}"
-        # Default to 11434 if no port specified
-        if [ "${OLLAMA_PORT}" = "${OLLAMA_IP}" ]; then
-            OLLAMA_PORT=11434
-        fi
-        iptables -A OUTPUT -d "${OLLAMA_IP}" -p tcp --dport "${OLLAMA_PORT}" -j ACCEPT
+    # Allow Ollama hosts if configured (comma-separated, e.g. "192.168.1.50,192.168.1.60:11434")
+    # Also supports legacy single-host OLLAMA_HOST variable
+    _OLLAMA_LIST="${OLLAMA_HOSTS:-${OLLAMA_HOST}}"
+    if [ -n "${_OLLAMA_LIST}" ]; then
+        IFS=',' read -ra _HOSTS <<< "${_OLLAMA_LIST}"
+        for _ENTRY in "${_HOSTS[@]}"; do
+            _ENTRY=$(echo "${_ENTRY}" | xargs)  # trim whitespace
+            _IP="${_ENTRY%%:*}"
+            _PORT="${_ENTRY##*:}"
+            if [ "${_PORT}" = "${_IP}" ]; then
+                _PORT=11434
+            fi
+            iptables -A OUTPUT -d "${_IP}" -p tcp --dport "${_PORT}" -j ACCEPT
+        done
+        # Export OLLAMA_HOST as the first entry for tools that expect a single host
+        export OLLAMA_HOST="http://${_HOSTS[0]%%:*}:${_PORT}"
     fi
 
     # Block RFC 1918 private ranges (prevents lateral LAN movement)
