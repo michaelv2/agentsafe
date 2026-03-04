@@ -26,12 +26,15 @@ services:
 
     # --- Volumes ---
     volumes:
-      # Workspace — read/write from host and container
-      - ./workspace:/workspace
+      # All projects visible as read-only by default
+      - ~/projects:/workspace/projects:ro
 
-      # Host projects — add your active projects here
-      # - ~/projects/foo:/workspace/foo
-      # - ~/projects/bar:/workspace/bar
+      # Scratch space for the agent (temp files, experiments)
+      - ./workspace:/workspace/scratch
+
+      # Active development overrides (rw) — inner mounts take precedence
+      # Use scripts/mount-project.sh to add/remove projects, or add manually:
+      # - ~/projects/my-project:/workspace/projects/my-project
 
       # Claude OAuth credentials — mounted read-only to a staging path;
       # entrypoint copies to the writable location so CLI can refresh tokens
@@ -49,7 +52,8 @@ services:
       # Claude CLI settings (permissions, hooks, statusline) — read-only
       - ./config/settings.json:/home/claude/.claude/settings.json:ro
       - ./config/statusline.sh:/home/claude/.claude/statusline.sh:ro
-      - ./config/global-claude.md:/home/claude/.claude/CLAUDE.md:ro
+      # Host's global CLAUDE.md — keeps container preferences in sync with host
+      - ~/.claude/CLAUDE.md:/home/claude/.claude/CLAUDE.md:ro
 
       # Codex CLI defaults (approval/sandbox/web search) — read-only
       - ./config/codex-config.toml:/home/claude/.codex/config.toml:ro

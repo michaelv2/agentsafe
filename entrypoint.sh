@@ -21,6 +21,10 @@ chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.ssh/authorized_keys" 2>/dev
 chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.claude"
 chmod 700 "${CLAUDE_HOME}/.claude"
 
+# .claude/projects and usage-data — persisted across rebuilds (bind-mounted from host)
+chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.claude/projects" 2>/dev/null || true
+chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.claude/usage-data" 2>/dev/null || true
+
 # =============================================================================
 # 2. Copy OAuth credentials to a writable location for token refresh
 # =============================================================================
@@ -155,7 +159,17 @@ else
 fi
 
 # =============================================================================
-# 6. Start SSH server
+# 6. Register Cortex MCP memory server (if available in workspace)
+# =============================================================================
+
+CORTEX_INDEX="/workspace/claude-cortex-core/dist/index.js"
+if [ -f "${CORTEX_INDEX}" ]; then
+    gosu ${CLAUDE_USER} claude mcp add --scope user memory node "${CORTEX_INDEX}" 2>/dev/null || true
+    echo "[agentsafe] Cortex MCP memory server registered"
+fi
+
+# =============================================================================
+# 7. Start SSH server
 # =============================================================================
 
 # Generate host keys if missing (first run)

@@ -42,7 +42,8 @@ WSL2 Host
     ├── Bind-mounted volumes (all secrets are read-only from host):
     │   /workspace (rw), credentials-seed (ro), git-credentials (ro),
     │   authorized_keys (ro), sshd_config (ro), settings.json (ro),
-    │   statusline.sh (ro), .aiexclude (ro)
+    │   statusline.sh (ro), CLAUDE.md (ro, from host ~/.claude/),
+    │   .aiexclude (ro)
     │
     ├── Optional: Cortex memory (shared with host):
     │   /opt/cortex (ro) — claude-cortex-core runtime
@@ -75,6 +76,7 @@ WSL2 Host
 
 ## Important Conventions
 
+- The global `CLAUDE.md` is bind-mounted from the host's `~/.claude/CLAUDE.md` (not a local copy in `config/`), so container preferences stay in sync with the host automatically.
 - All secrets live under `config/` and are bind-mounted read-only. Never bake secrets into the Docker image.
 - The container runs as non-root user `claude` (UID/GID 1001). Entrypoint runs as root only for setup, then drops privileges via `gosu`.
 - iptables rules are applied in `entrypoint.sh` — any network policy changes go there.
