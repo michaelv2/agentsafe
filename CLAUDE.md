@@ -49,6 +49,10 @@ WSL2 Host
     │   /opt/cortex (ro) — claude-cortex-core runtime
     │   ~/.claude-cortex (rw) — shared SQLite memory DB
     │
+    ├── CUDA runtime (from nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04):
+    │   libcudart 12.8, libcublas 12.8, cuDNN 9.8
+    │   Available for local embeddings, ML inference, and GPU compute
+    │
     └── Security layers:
         cap_drop ALL + selective cap_add, non-root user,
         key-only SSH, .aiexclude blocks credential reads
@@ -64,7 +68,7 @@ WSL2 Host
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` | Multi-stage build: `node:22-slim`, installs Claude CLI, Python venv, sshd, iptables, tini |
+| `Dockerfile` | Multi-stage build: builder (`node:22-slim`) + runtime (`nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04` with Node.js 22 via NodeSource). Installs Claude CLI, Python venv, sshd, iptables, tini. CUDA runtime + cuDNN 9 available for GPU workloads |
 | `docker-compose.yml` | Production config: GPU runtime, port mappings (2222→22, 8000-8099), volume mounts, env, capabilities |
 | `entrypoint.sh` | Container init: credential setup, git config, iptables rules, sshd start, privilege drop |
 | `scripts/setup-host.sh` | Host one-time setup: NVIDIA toolkit install, directory/placeholder creation |

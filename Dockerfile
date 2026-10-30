@@ -16,13 +16,19 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex \
         \) -exec rm -rf {} + 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Stage 2: Runtime — lean image with only what the agent needs
+# Stage 2: Runtime — CUDA base with Node.js and system packages
 # ---------------------------------------------------------------------------
-FROM node:22-slim
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 ARG CLAUDE_USER=claude
 ARG CLAUDE_UID=1001
 ARG CLAUDE_GID=1001
+
+# Node.js 22 via NodeSource (replaces node:22-slim base)
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # System packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -36,7 +42,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gosu \
         iptables \
         tini \
-        ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -51,9 +56,11 @@ COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js /usr/local/bin/claude \
     && ln -s /usr/local/lib/node_modules/@openai/codex/bin/codex.js /usr/local/bin/codex
 
-# Remove the node user/group from the base image to free UID/GID (e.g. 1000)
-RUN userdel -r node 2>/dev/null || true \
-    && groupdel node 2>/dev/null || true
+# Remove any existing user/group at the target UID/GID to avoid conflicts
+RUN existing_user=$(getent passwd ${CLAUDE_UID} | cut -d: -f1) \
+    && [ -n "$existing_user" ] && userdel -r "$existing_user" 2>/dev/null || true \
+    && existing_group=$(getent group ${CLAUDE_GID} | cut -d: -f1) \
+    && [ -n "$existing_group" ] && groupdel "$existing_group" 2>/dev/null || true
 
 # Create non-root user
 RUN groupadd -g ${CLAUDE_GID} ${CLAUDE_USER} \
@@ -79,8 +86,9 @@ RUN python3 -m venv /home/${CLAUDE_USER}/.venv \
     && chown -R ${CLAUDE_USER}:${CLAUDE_USER} /home/${CLAUDE_USER}/.venv
 
 # Add venv to PATH for all users
-ENV PATH="/home/${CLAUDE_USER}/.venv/bin:${PATH}"
+ENV PATH="/home/${CLAUDE_USER}/.venv/bin:/usr/local/cuda/bin:${PATH}"
 ENV VIRTUAL_ENV="/home/${CLAUDE_USER}/.venv"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

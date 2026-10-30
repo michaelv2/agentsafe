@@ -57,7 +57,23 @@ fi
 chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_JSON}"
 
 # =============================================================================
-# 4. Configure git for the machine user (HTTPS credential helper)
+# 4. Copy git credentials to a writable location for credential-store
+# =============================================================================
+
+GIT_CRED_SEED="${CLAUDE_HOME}/.git-credentials-seed"
+GIT_CRED_LIVE="${CLAUDE_HOME}/.git-credentials"
+
+if [ -f "${GIT_CRED_SEED}" ]; then
+    cp "${GIT_CRED_SEED}" "${GIT_CRED_LIVE}"
+    chown ${CLAUDE_USER}:${CLAUDE_USER} "${GIT_CRED_LIVE}"
+    chmod 600 "${GIT_CRED_LIVE}"
+    echo "[agentsafe] Git credentials seeded (writable copy for credential-store)"
+else
+    echo "[agentsafe] WARNING: No git credentials seed found at ${GIT_CRED_SEED}"
+fi
+
+# =============================================================================
+# 5. Configure git for the machine user (HTTPS credential helper)
 # =============================================================================
 
 gosu ${CLAUDE_USER} git config --global credential.helper "store --file=${CLAUDE_HOME}/.git-credentials"
@@ -69,7 +85,7 @@ gosu ${CLAUDE_USER} git config --global user.email "${GIT_AUTHOR_EMAIL:-agentsaf
 gosu ${CLAUDE_USER} git config --global url."https://github.com/".insteadOf "git@github.com:"
 
 # =============================================================================
-# 5. Network egress rules — block LAN, allow internet + Ollama
+# 6. Network egress rules — block LAN, allow internet + Ollama
 # =============================================================================
 
 apply_network_rules() {
@@ -159,7 +175,7 @@ else
 fi
 
 # =============================================================================
-# 6. Register Cortex MCP memory server (if available in workspace)
+# 7. Register Cortex MCP memory server (if available in workspace)
 # =============================================================================
 
 CORTEX_INDEX="/workspace/claude-cortex-core/dist/index.js"
@@ -169,7 +185,7 @@ if [ -f "${CORTEX_INDEX}" ]; then
 fi
 
 # =============================================================================
-# 7. Start SSH server
+# 8. Start SSH server
 # =============================================================================
 
 # Generate host keys if missing (first run)
@@ -179,7 +195,7 @@ echo "[agentsafe] Starting sshd"
 /usr/sbin/sshd
 
 # =============================================================================
-# 7. Drop to non-root user and exec CMD
+# 9. Drop to non-root user and exec CMD
 # =============================================================================
 
 echo "[agentsafe] Ready — dropping to user '${CLAUDE_USER}'"
