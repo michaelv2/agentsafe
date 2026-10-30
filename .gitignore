@@ -16,6 +16,8 @@ config/*secret*
 # WORKSPACE — user data, not part of the project
 # =============================================================================
 workspace/
+# Container runtime state mounted by docker-compose.yml (Claude transcripts, usage data)
+data/
 
 # =============================================================================
 # Machine-specific files
