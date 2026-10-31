@@ -39,14 +39,27 @@ fi
 # The mount line we're looking for / adding
 MOUNT_LINE="      - ~/projects/${PROJECT}:/workspace/projects/${PROJECT}"
 
+# In git repos, hooks and config stay read-only so the agent can't plant
+# code that runs when git is used on the host
+GIT_LINES=()
+for _path in .git/hooks .git/config; do
+    GIT_LINES+=("      - ~/projects/${PROJECT}/${_path}:/workspace/projects/${PROJECT}/${_path}:ro")
+done
+
 # Check current state
 is_rw() {
     grep -qF "$MOUNT_LINE" "$COMPOSE_FILE" 2>/dev/null
 }
 
+has_git_protection() {
+    grep -qF "${GIT_LINES[0]}" "$COMPOSE_FILE" 2>/dev/null
+}
+
 case "$ACTION" in
     status)
-        if is_rw; then
+        if is_rw && has_git_protection; then
+            echo "$PROJECT: rw (explicit override, .git/hooks and .git/config read-only)"
+        elif is_rw; then
             echo "$PROJECT: rw (explicit override)"
         else
             echo "$PROJECT: ro (base mount)"
@@ -59,16 +72,25 @@ case "$ACTION" in
             exit 0
         fi
 
-        # Insert the new mount line after the "Use scripts/mount-project.sh" comment
+        # Lines to insert: the rw mount, plus the read-only git mounts for repos
+        INSERT_FILE="$(mktemp)"
+        trap 'rm -f "$INSERT_FILE"' EXIT
+        printf '%s\n' "$MOUNT_LINE" > "$INSERT_FILE"
+        if [[ -d "$PROJECTS_DIR/$PROJECT/.git/hooks" && -f "$PROJECTS_DIR/$PROJECT/.git/config" ]]; then
+            printf '%s\n' "${GIT_LINES[@]}" >> "$INSERT_FILE"
+        fi
+
+        # Insert after the "Use scripts/mount-project.sh" comment
+        # (| as the sed delimiter, since the marker contains slashes)
         MARKER="# Use scripts/mount-project.sh to add/remove projects here"
         if grep -qF "$MARKER" "$COMPOSE_FILE"; then
-            sed -i "/$MARKER/a\\$MOUNT_LINE" "$COMPOSE_FILE"
+            sed -i "\|$MARKER|r $INSERT_FILE" "$COMPOSE_FILE"
         else
             # Fallback: insert after last existing rw override mount
             # Find the last line matching the override pattern and insert after it
             LAST_OVERRIDE=$(grep -n '^\s*- ~/projects/[^:]*:/workspace/projects/' "$COMPOSE_FILE" | tail -1 | cut -d: -f1)
             if [[ -n "$LAST_OVERRIDE" ]]; then
-                sed -i "${LAST_OVERRIDE}a\\$MOUNT_LINE" "$COMPOSE_FILE"
+                sed -i "${LAST_OVERRIDE}r $INSERT_FILE" "$COMPOSE_FILE"
             else
                 echo "Error: could not find insertion point in $COMPOSE_FILE"
                 exit 1
@@ -83,9 +105,11 @@ case "$ACTION" in
             exit 0
         fi
 
-        # Remove the mount line (escape special chars for sed)
-        ESCAPED=$(printf '%s\n' "$MOUNT_LINE" | sed 's/[[\.*^$()+?{|]/\\&/g')
-        sed -i "\|${ESCAPED}|d" "$COMPOSE_FILE"
+        # Remove the mount line and any git mounts (escape special chars for sed)
+        for _line in "$MOUNT_LINE" "${GIT_LINES[@]}"; do
+            ESCAPED=$(printf '%s\n' "$_line" | sed 's/[[\.*^$()+?{|]/\\&/g')
+            sed -i "\|${ESCAPED}|d" "$COMPOSE_FILE"
+        done
 
         echo "Removed rw override for $PROJECT (now ro via base mount)"
         ;;

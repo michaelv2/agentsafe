@@ -35,6 +35,10 @@ services:
       # Active development overrides (rw) — inner mounts take precedence
       # Use scripts/mount-project.sh to add/remove projects, or add manually:
       # - ~/projects/my-project:/workspace/projects/my-project
+      # For git repos, also keep hooks and config read-only so the agent can't
+      # plant code that runs when git is used on the host:
+      # - ~/projects/my-project/.git/hooks:/workspace/projects/my-project/.git/hooks:ro
+      # - ~/projects/my-project/.git/config:/workspace/projects/my-project/.git/config:ro
 
       # Claude OAuth credentials — mounted read-only to a staging path;
       # entrypoint copies to the writable location so CLI can refresh tokens
