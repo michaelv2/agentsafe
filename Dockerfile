@@ -98,8 +98,12 @@ RUN mkdir -p /workspace \
         /home/${CLAUDE_USER}/.codex \
         /home/${CLAUDE_USER}/.ssh
 
-# Set up a default Python venv so the agent never needs --break-system-packages
+# Set up a default Python venv so the agent never needs --break-system-packages,
+# with the audited, hash-pinned packages from default-venv.txt
+COPY default-venv.txt /opt/default-venv.txt
 RUN python3 -m venv /home/${CLAUDE_USER}/.venv \
+    && /home/${CLAUDE_USER}/.venv/bin/pip install --no-cache-dir --require-hashes \
+        --only-binary=:all: -r /opt/default-venv.txt \
     && chown -R ${CLAUDE_USER}:${CLAUDE_USER} /home/${CLAUDE_USER}/.venv
 
 # Add venv to PATH for all users
