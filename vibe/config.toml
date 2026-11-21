@@ -4,7 +4,10 @@
 # The container is the boundary (one project, no secrets but Vibe's own key, no LAN), so Vibe
 # approves its own tool calls instead of prompting. For a classifier that prompts only on risky
 # calls, use default_agent = "smart-approve" instead.
-active_model = "Mistral Large 4"
+#
+# Model aliases match the host's ~/.vibe/config.toml: the host's custom agents (~/.vibe/agents,
+# mounted read-only) pick their model by alias, so a rename on one side breaks them on the other.
+active_model = "mistral4"
 default_agent = "auto-approve"
 enable_telemetry = false
 enable_update_checks = false
@@ -18,7 +21,7 @@ providers = [
 [[models]]
 name = "mistral-large-4"
 provider = "mistral"
-alias = "Mistral Large 4"
+alias = "mistral4"
 thinking = "high"
 max_context_length = 1048576
 auto_compact_threshold = 838860
@@ -26,12 +29,31 @@ input_price = 0.7
 output_price = 2.1
 cached_input_price = 0.07
 
-# GLM-5.3-Flash on Mistral: add a [[models]] block once you've confirmed its model ID in
-# Mistral's model list, and that Mistral's data terms cover it (not a Labs/Preview model).
+[[models]]
+name = "mistral-medium-3.5"
+provider = "mistral"
+alias = "mistral3.5"
+thinking = "high"
+
+# Third-party models served by Mistral, for the llm-council agents
+[[models]]
+name = "deepseek-v4-1-flash-1017"
+provider = "mistral"
+alias = "deepseek-flash"
+
+[[models]]
+name = "zai-glm-5-3-flash"
+provider = "mistral"
+alias = "glm-flash"
+
+[[models]]
+name = "zai-glm-5-3"
+provider = "mistral"
+alias = "glm"
 
 [[models]]
 name = "qwen3.8:27b-128k"
 provider = "lan"
-alias = "qwen-lan"
+alias = "qwen-local"
 max_context_length = 131072
 thinking = "high"
