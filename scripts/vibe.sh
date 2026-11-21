@@ -4,6 +4,12 @@
 # Usage: scripts/vibe.sh <project> [project...] [vibe options...]
 #        scripts/vibe.sh <project> --setup     # first time: store a Vibe-only Mistral key
 #        scripts/vibe.sh <project> --shell     # bash with the same mounts, to check what's visible
+#        scripts/vibe.sh <project> [project...] -c   # continue the last session (e.g. after adding a project)
+#
+# Sessions outlive the container (they're saved in data/vibe), so to make another project writable
+# mid-session, exit while Vibe is waiting for input and relaunch with the extra project and -c.
+# Keep the same first project: -c continues the most recent session started in that folder.
+# --resume without an ID picks from older sessions instead.
 #
 # Every project in ~/projects is readable at /workspace/projects. The ones you name are writable
 # (each with .git/hooks and .git/config read-only, so nothing planted there runs when you use git
