@@ -1,0 +1,37 @@
+# Vibe inside AgentSafe. scripts/vibe.sh copies this to data/vibe/config.toml on first run;
+# edit that copy afterwards (data/ is gitignored).
+#
+# The container is the boundary (one project, no secrets but Vibe's own key, no LAN), so Vibe
+# approves its own tool calls instead of prompting. For a classifier that prompts only on risky
+# calls, use default_agent = "smart-approve" instead.
+active_model = "Mistral Large 4"
+default_agent = "auto-approve"
+enable_telemetry = false
+enable_update_checks = false
+enable_auto_update = false
+
+# llm-server's Ollama (reachable from the container on port 11434 only), for the "coder" subagent
+providers = [
+    { name = "lan", api_base = "http://llm-server:11434/v1", api_key_env_var = "" },
+]
+
+[[models]]
+name = "mistral-large-4"
+provider = "mistral"
+alias = "Mistral Large 4"
+thinking = "high"
+max_context_length = 1048576
+auto_compact_threshold = 838860
+input_price = 0.7
+output_price = 2.1
+cached_input_price = 0.07
+
+# GLM-5.3-Flash on Mistral: add a [[models]] block once you've confirmed its model ID in
+# Mistral's model list, and that Mistral's data terms cover it (not a Labs/Preview model).
+
+[[models]]
+name = "qwen3.8:27b-128k"
+provider = "lan"
+alias = "qwen-lan"
+max_context_length = 131072
+thinking = "high"

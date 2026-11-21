@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# agentsafe-venv — print this project's container virtualenv, creating it if needed.
+#
+# A project's own .venv was built on the host and points at the host's Python, so it doesn't run
+# in the container. Each project gets one under ~/venvs instead (data/venvs on the host), kept
+# between sessions. Copied into the image as /usr/local/bin/agentsafe-venv.
+#
+# Usage:  "$(agentsafe-venv)/bin/pip" install -r requirements.txt
+#         "$(agentsafe-venv)/bin/python" -m pytest
+set -euo pipefail
+
+root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+dir="${AGENTSAFE_VENVS:-$HOME/venvs}/$(basename "$root")"
+if [[ ! -x "$dir/bin/python" ]]; then
+    /usr/bin/python3 -m venv "$dir" >&2
+fi
+printf '%s\n' "$dir"

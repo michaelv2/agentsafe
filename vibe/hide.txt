@@ -1,0 +1,12 @@
+# Paths under ~/projects that Vibe sessions (scripts/vibe.sh) see as empty, one per line, relative
+# to ~/projects: a folder shows up as an empty folder, a file as an empty file. Secret files (.env,
+# keys, credentials) are hidden everywhere without being listed here.
+agentsafe/config    # Claude login, GitHub token, API keys
+agentsafe/data      # Claude Code transcripts from container sessions; Vibe's own key and state
+
+# Personal databases: uncomment to hide them too
+# liftR/liftr.db
+# liftR/liftr.20261003-203020.bak.db
+# oracle/oracle.db
+# yt-queue/data
+# pelotonR/data

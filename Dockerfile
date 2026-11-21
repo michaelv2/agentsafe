@@ -7,7 +7,10 @@
 # ---------------------------------------------------------------------------
 FROM node:22-slim AS builder
 
-RUN npm install -g @anthropic-ai/claude-code @openai/codex \
+# Pinned, so a rebuild never upgrades them silently; bump deliberately (after an audit)
+ARG CLAUDE_CODE_VERSION=2.1.96
+ARG CODEX_VERSION=0.118.0
+RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" "@openai/codex@${CODEX_VERSION}" \
     && find /usr/local/lib/node_modules/@anthropic-ai/claude-code \
         -path "*/vendor/*" \( \
             -name "win32*" -o \
@@ -42,8 +45,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gosu \
         iptables \
         tini \
+        strace \
+        binutils \
+        bind9-dnsutils \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Mistral Vibe CLI (scripts/vibe.sh), in its own venv, every dependency pinned to the audited set
+COPY vibe/constraints.txt /opt/vibe-constraints.txt
+RUN /usr/bin/python3 -m venv /opt/vibe \
+    && /opt/vibe/bin/pip install --no-cache-dir --only-binary=:all: \
+        -c /opt/vibe-constraints.txt mistral-vibe \
+    && ln -s /opt/vibe/bin/vibe /usr/local/bin/vibe
+
+# Per-project container virtualenvs (host .venv folders point at the host's Python)
+COPY scripts/agentsafe-venv /usr/local/bin/agentsafe-venv
+RUN chmod 755 /usr/local/bin/agentsafe-venv
 
 # sshd requires this directory
 RUN mkdir -p /var/run/sshd

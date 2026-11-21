@@ -25,6 +25,13 @@ chmod 700 "${CLAUDE_HOME}/.claude"
 chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.claude/projects" 2>/dev/null || true
 chown ${CLAUDE_USER}:${CLAUDE_USER} "${CLAUDE_HOME}/.claude/usage-data" 2>/dev/null || true
 
+# Vibe's home and the per-project container virtualenvs (data/vibe, data/venvs on the host)
+for _dir in "${CLAUDE_HOME}/.vibe" "${CLAUDE_HOME}/venvs"; do
+    if [ -d "${_dir}" ]; then
+        chown ${CLAUDE_USER}:${CLAUDE_USER} "${_dir}"
+    fi
+done
+
 # =============================================================================
 # 2. Copy OAuth credentials to a writable location for token refresh
 # =============================================================================
@@ -188,11 +195,16 @@ fi
 # 8. Start SSH server
 # =============================================================================
 
-# Generate host keys if missing (first run)
-ssh-keygen -A 2>/dev/null || true
+# Per-session containers (scripts/vibe.sh) set AGENTSAFE_NO_SSHD=1: no remote access there
+if [ "${AGENTSAFE_NO_SSHD:-0}" = "1" ]; then
+    echo "[agentsafe] sshd skipped (AGENTSAFE_NO_SSHD=1)"
+else
+    # Generate host keys if missing (first run)
+    ssh-keygen -A 2>/dev/null || true
 
-echo "[agentsafe] Starting sshd"
-/usr/sbin/sshd
+    echo "[agentsafe] Starting sshd"
+    /usr/sbin/sshd
+fi
 
 # =============================================================================
 # 9. Drop to non-root user and exec CMD

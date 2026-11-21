@@ -77,6 +77,9 @@ WSL2 Host
 | `config/statusline.sh` | Claude CLI statusline script (model, cwd, context bar, cost) |
 | `config/.aiexclude` | Glob patterns preventing Claude from reading secrets |
 | `config/sshd_config` | Hardened sshd: key-only auth, no root, no agent forwarding, local forwarding only |
+| `scripts/vibe.sh` | Runs Mistral Vibe in a throwaway container (`vibe` compose service, profile `vibe`) with all of `~/projects` read-only and the named projects writable, secret files and `vibe/hide.txt` paths shown empty (`--shell` gives bash with the same view): no GPU, ports, SSH, credentials beyond Vibe's own key, or LAN except llm-server's Ollama port (for local subagents); host `~/.vibe/agents` and `~/.vibe/skills` mounted read-only; commits but can't push. State in `data/vibe` |
+| `vibe/` | Tracked Vibe templates: `constraints.txt` (audited, pinned dependency set for the image), `config.toml` (copied to `data/vibe` on first run: auto-approve, telemetry and updates off), `AGENTS.container.md` (appended to the host's `~/.vibe/AGENTS.md` on every run), `hide.txt` (paths sessions see as empty) |
+| `scripts/agentsafe-venv` | In the image as `/usr/local/bin/agentsafe-venv`: prints (and creates) the project's container virtualenv under `~/venvs` (`data/venvs`), since host `.venv` folders point at the host's Python |
 
 ## Important Conventions
 

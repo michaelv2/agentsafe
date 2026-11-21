@@ -6,13 +6,17 @@
 #
 #   */15 * * * * ~/projects/agentsafe/scripts/git-integrity-check.sh
 #
-# Requires: SLACK_WEBHOOK_URL environment variable (or set below)
+# Slack: SLACK_WEBHOOK_URL from the environment, else read from ~/.bashrc_env
+# (cron doesn't read ~/.bashrc, and interactive shells no longer export secrets)
 # Optional: INTEGRITY_PROJECTS_DIR to override default ~/projects
 
 set -euo pipefail
 
 PROJECTS_DIR="${INTEGRITY_PROJECTS_DIR:-$HOME/projects}"
 SLACK_WEBHOOK="${SLACK_WEBHOOK_URL:-}"
+if [[ -z "$SLACK_WEBHOOK" && -f "$HOME/.bashrc_env" ]]; then
+    SLACK_WEBHOOK=$(set +eu; . "$HOME/.bashrc_env" >/dev/null 2>&1; printf '%s' "${SLACK_WEBHOOK_URL:-}")
+fi
 
 # Collect repos with unexpected changes
 dirty_repos=""

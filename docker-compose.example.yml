@@ -65,6 +65,9 @@ services:
       # .aiexclude — read-only
       - ./config/.aiexclude:/home/claude/.claude/.aiexclude:ro
 
+      # Per-project container virtualenvs (agentsafe-venv) — persist across rebuilds
+      - ./data/venvs:/home/claude/venvs
+
       # Cortex memory — runtime (read-only) and shared data (read-write)
       # Requires claude-cortex-core to be cloned and built on the host
       # - ~/projects/claude-cortex-core:/opt/cortex:ro
@@ -113,5 +116,57 @@ services:
 
     # --- Lifecycle ---
     restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  # --- Vibe (Mistral) sessions --------------------------------------------------
+  # One throwaway container per session, started by scripts/vibe.sh, which adds the
+  # project mounts: all of ~/projects read-only, the named projects writable (their
+  # .git/hooks and .git/config read-only), secret files and vibe/hide.txt paths empty.
+  # Run it through vibe.sh, never `docker compose run vibe` directly, so the hiding
+  # always comes with the mounts. Unlike the main container: no GPU, ports, SSH,
+  # Claude/Codex/GitHub credentials, or LAN access except llm-server's Ollama.
+  # It can commit but not push.
+  # Vibe approves its own tool calls in here, since the container is the boundary.
+  vibe:
+    profiles: ["vibe"]
+    image: agentsafe:latest
+    hostname: agentsafe-vibe
+    volumes:
+      # Vibe's home: config.toml, AGENTS.md, .env (a Vibe-only Mistral key), sessions
+      - ./data/vibe:/home/claude/.vibe
+      # Per-project container virtualenvs (agentsafe-venv), kept between sessions
+      - ./data/venvs:/home/claude/venvs
+      # Your custom Vibe agents and skills (e.g. coder, todo-scout), read-only: edit them on the host
+      - ~/.vibe/agents:/home/claude/.vibe/agents:ro
+      - ~/.vibe/skills:/home/claude/.vibe/skills:ro
+    environment:
+      - AGENTSAFE_NO_SSHD=1
+      # llm-server's Ollama is the one LAN address allowed (port 11434), for local subagents
+      - OLLAMA_HOSTS=   # e.g. 192.168.1.50
+      - GIT_TERMINAL_PROMPT=0   # a push fails at once instead of waiting for a login
+      - TERM=xterm-256color
+      - GIT_AUTHOR_NAME=agentsafe-bot
+      - GIT_AUTHOR_EMAIL=agentsafe-bot@users.noreply.github.com
+      - GIT_COMMITTER_NAME=agentsafe-bot
+      - GIT_COMMITTER_EMAIL=agentsafe-bot@users.noreply.github.com
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN          # fix ownership on mounted volumes
+      - FOWNER         # chmod on files not owned by root
+      - SETUID         # gosu to drop from root to claude
+      - SETGID         # gosu to drop from root to claude
+      - DAC_OVERRIDE   # entrypoint writes into claude-owned directories as root
+      - NET_ADMIN      # iptables egress rules
+      - NET_RAW        # iptables
+    extra_hosts:
+      # - "llm-server=192.168.1.50"   # if your config.toml uses a host name for Ollama
+      # Vibe's built-in crash-report host (Sentry): telemetry is off in config.toml, but the
+      # native launcher can't be inspected to confirm it honors that, so it resolves nowhere
+      - "o4507101628137472.ingest.de.sentry.io:0.0.0.0"
+      - "o4507101628137472.ingest.de.sentry.io=::"
+    security_opt:
+      - no-new-privileges:true   # no sshd here, so nothing needs setuid after the drop
     stdin_open: true
     tty: true
