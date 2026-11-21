@@ -110,6 +110,9 @@ services:
       - AUDIT_WRITE    # sshd audit logging
       - NET_ADMIN      # iptables egress rules
       - NET_RAW        # iptables
+      - KILL           # tini (root, PID 1) forwards signals to the claude-owned session;
+                       # without it every forwarded signal is fatal ("[FATAL tini (1)]
+                       # Unexpected error when forwarding signal") and the container exits
     # NOTE: no-new-privileges is omitted because sshd needs setuid on child
     # processes after authentication. Security is maintained via cap_drop ALL
     # with only specific capabilities added back.
@@ -160,6 +163,9 @@ services:
       - DAC_OVERRIDE   # entrypoint writes into claude-owned directories as root
       - NET_ADMIN      # iptables egress rules
       - NET_RAW        # iptables
+      - KILL           # tini (root, PID 1) forwards signals to the claude-owned session;
+                       # without it every forwarded signal is fatal ("[FATAL tini (1)]
+                       # Unexpected error when forwarding signal") and the container exits
     extra_hosts:
       # - "llm-server=192.168.1.50"   # if your config.toml uses a host name for Ollama
       # Vibe's built-in crash-report host (Sentry): telemetry is off in config.toml, but the
