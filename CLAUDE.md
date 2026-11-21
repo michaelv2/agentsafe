@@ -15,8 +15,8 @@ scripts/setup-host.sh
 # Daily launch (pre-flight checks, auto-build if needed, docker compose up)
 scripts/start.sh
 
-# Build image manually
-docker build -t agentsafe:latest .
+# Build image manually (always pass your UID/GID: the default 1001 locks you out of data/vibe and data/venvs)
+docker build --build-arg CLAUDE_UID="$(id -u)" --build-arg CLAUDE_GID="$(id -g)" -t agentsafe:latest .
 
 # Interactive Claude CLI inside running container
 scripts/claude.sh <args>
@@ -86,7 +86,7 @@ WSL2 Host
 
 - The global `CLAUDE.md` is bind-mounted from the host's `~/.claude/CLAUDE.md` (not a local copy in `config/`), so container preferences stay in sync with the host automatically.
 - All secrets live under `config/` and are bind-mounted read-only. Never bake secrets into the Docker image.
-- The container runs as non-root user `claude` (UID/GID 1001). Entrypoint runs as root only for setup, then drops privileges via `gosu`.
+- The container runs as non-root user `claude`, built with the host user's UID/GID (`start.sh` passes them; the Dockerfile default of 1001 is only a fallback) so bind-mounted `data/` folders stay usable from both sides. Entrypoint runs as root only for setup, then drops privileges via `gosu`.
 - iptables rules are applied in `entrypoint.sh` — any network policy changes go there.
 - `config/settings.json` is mounted read-only into the container as the Claude CLI's user settings. It controls tool permissions (Read, Edit, Write, Glob, Grep, Bash), deny rules for secrets, statusline, Cortex hooks, and disables auto-updates (which can't work in the container since the CLI is installed as root at build time).
 - Cortex memory integration is optional. It requires `claude-cortex-core` cloned and built on the host, with volumes mounting the runtime (ro) and `~/.claude-cortex` data directory (rw). The shared SQLite DB uses WAL mode; concurrent host+container writes may cause contention.
