@@ -14,13 +14,18 @@
 # Every project in ~/projects is readable at /workspace/projects. The ones you name are writable
 # (each with .git/hooks and .git/config read-only, so nothing planted there runs when you use git
 # on the host), and the session starts in the first. To write to another project, relaunch with it
-# named. Secrets stay hidden: .env files, keys and credentials files appear empty, and the folders
+# named. Secrets stay hidden: .env/.envrc files, keys and credentials files appear empty, and the folders
 # listed in vibe/hide.txt (credentials, agent transcripts) appear as empty folders. Both lists are
 # rebuilt at every launch. The container can commit but not push: review and push from the host.
 #
 # Each run starts a fresh container (the "vibe" service in docker-compose.yml) and removes it on
 # exit, so nothing needs restarting and the main agentsafe container is left alone. The project
 # mounts are added here rather than in docker-compose.yml so they never go in without the hiding.
+#
+# Each named project's .envrc is loaded into the session's environment, so the same file serves
+# direnv on the host and Vibe here. Only its `export KEY=value` lines are loaded; other lines
+# (source .venv/bin/activate, dotenv, PATH_add) are host-only and ignored. The file itself appears
+# empty inside the container, but Vibe can see every loaded value with `env`.
 #
 # Vibe's state lives in data/vibe (config.toml, .env with the key, sessions). AGENTS.md there is
 # rebuilt on every run from ~/.vibe/AGENTS.md plus vibe/AGENTS.container.md, so edit those instead.
@@ -103,11 +108,24 @@ while IFS= read -r -d '' f; do
 done < <(find "$ROOT" \
     \( -name node_modules -o -name .git -o -name __pycache__ -o -name .mypy_cache \
        -o -name '.venv*' -o -name venv -o -name '*-venv' \) -prune \
-    -o -type f \( -name .env -o \( -name '.env.*' ! -name .env.example \) -o -name .netrc \
+    -o -type f \( -name .env -o \( -name '.env.*' ! -name .env.example \) -o -name .envrc -o -name .netrc \
        -o -name '*.pem' -o -name '*.key' -o -name '*credentials*.json' -o -name git-credentials \
        -o -name .git-credentials -o -name 'id_rsa*' -o -name 'id_ed25519*' -o -name 'id_ecdsa*' \) \
     -print0 2>/dev/null)
 echo "[vibe.sh] writable: ${PROJECTS[*]}; all other projects read-only; $HIDDEN secret files hidden" >&2
 
-exec docker compose --profile vibe run --rm "${MOUNTS[@]}" -w "$WS/${PROJECTS[0]}" \
+# Each named project's .envrc as environment variables (later projects win on conflicts)
+ENV_ARGS=()
+for p in "${PROJECTS[@]}"; do
+    f="$ROOT/$p/.envrc"
+    [[ -f "$f" ]] || continue
+    # Only the KEY=value lines, through a pipe (no temp file with the values) that stays open
+    # across the exec below. Other lines (source, dotenv, layout, PATH_add) are host-only.
+    exec {fd}< <(grep -E '^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=' "$f")
+    ENV_ARGS+=(--env-from-file "/dev/fd/$fd")
+    other=$(grep -cvE '^[[:space:]]*(#.*)?$|^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=' "$f" || true)
+    echo "[vibe.sh] env vars from $p/.envrc$([[ $other -gt 0 ]] && echo " (ignored $other host-only line(s))")" >&2
+done
+
+exec docker compose --profile vibe run --rm "${MOUNTS[@]}" "${ENV_ARGS[@]}" -w "$WS/${PROJECTS[0]}" \
     vibe "${CMD[@]}" "$@"
