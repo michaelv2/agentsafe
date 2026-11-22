@@ -58,9 +58,13 @@ services:
       - ./config/statusline.sh:/home/claude/.claude/statusline.sh:ro
       # Host's global CLAUDE.md — keeps container preferences in sync with host
       - ~/.claude/CLAUDE.md:/home/claude/.claude/CLAUDE.md:ro
+      # Shared agent instructions (claude-config/AGENTS.md); CLAUDE.md imports it
+      - ~/.claude/AGENTS.md:/home/claude/.claude/AGENTS.md:ro
 
       # Codex CLI defaults (approval/sandbox/web search) — read-only
       - ./config/codex-config.toml:/home/claude/.codex/config.toml:ro
+      # Shared agent instructions as Codex's global AGENTS.md
+      - ~/.claude/AGENTS.md:/home/claude/.codex/AGENTS.md:ro
 
       # .aiexclude — read-only
       - ./config/.aiexclude:/home/claude/.claude/.aiexclude:ro
